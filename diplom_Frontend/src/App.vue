@@ -7,15 +7,15 @@
       <DocumentUpload 
         v-if="currentStep === 1"
         :documents="documents"
+        :can-analyze="canAnalyze"
         @add-document="addDocument"
         @remove-document="removeDocument"
         @clear-all="clearAll"
         @load-example="loadExample"
         @analyze-documents="analyzeDocuments"
-        :can-analyze="canAnalyze"
       />
 
-      <!-- Шаг 2: Результаты анализа и выбор темы -->
+      <!-- Остальные компоненты остаются без изменений -->
       <AnalysisResults 
         v-if="currentStep === 2"
         :topics="topics"
@@ -24,18 +24,16 @@
         @next-step="nextStep"
       />
 
-      <!-- Шаг 3: Выбор временного диапазона -->
       <DateRangeSelection 
         v-if="currentStep === 3"
         :selected-topic="selectedTopic"
         :documents="documents"
         :date-range="dateRange"
+        :can-generate-summary="canGenerateSummary"
         @set-date-range="setDateRange"
         @generate-summary="generateSummary"
-        :can-generate-summary="canGenerateSummary"
       />
 
-      <!-- Шаг 4: Справка -->
       <SummaryReport 
         v-if="currentStep === 4"
         :summary="summary"
@@ -47,10 +45,8 @@
         @back-to-topics="currentStep = 2"
       />
 
-      <!-- Индикатор загрузки -->
       <LoadingOverlay v-if="loading" />
 
-      <!-- Сообщения об ошибках -->
       <ErrorMessage 
         v-if="error" 
         :error="error"
@@ -87,11 +83,6 @@ const dateRange = reactive({
   end: ''
 })
 
-// Примерные данные
-const exampleData = [
-  // ... (те же данные)
-]
-
 // Computed properties
 const canAnalyze = computed(() => {
   return documents.value.length > 0 && documents.value.every(doc => 
@@ -116,10 +107,12 @@ const clearAll = () => {
   documents.value = []
 }
 
-const loadExample = () => {
+// Обновленный метод загрузки примера
+const loadExample = (exampleData) => {
   documents.value = JSON.parse(JSON.stringify(exampleData))
 }
 
+// Остальные методы остаются без изменений
 const selectTopic = (topicName) => {
   selectedTopic.value = topicName
 }

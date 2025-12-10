@@ -10,6 +10,18 @@ DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
+LLM_CONFIG = {
+    'PROVIDER': 'ollama',  # 'ollama', 'yandex_gpt', 'openai'
+    'MODEL_NAME': 'mistral',  # Название модели Ollama
+    'OLLAMA_URL': 'http://localhost:11434',
+    'USE_CACHE': True,
+    'CACHE_DIR': '.llm_cache',
+    'TIMEOUT': 120,  # секунд
+    'MAX_RETRIES': 3,
+    'TEMPERATURE': 0.3,
+    'MAX_TOKENS': 4000,
+}
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',

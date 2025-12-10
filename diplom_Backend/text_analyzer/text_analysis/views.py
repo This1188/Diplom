@@ -13,6 +13,164 @@ from .serializers import (
 )
 from .bayesian_analyzer import BayesianTopicAnalyzer, EnhancedBayesianAnalyzer
 
+
+# Добавьте импорт в начале файла
+from .improved_analyzer import create_analyzer, HybridTopicAnalyzer
+from .training_data import TopicTrainingData
+
+class ImprovedTopicAnalysisView(APIView):
+    """
+    Улучшенный API для тематического анализа
+    """
+    
+    def post(self, request):
+        """
+        Основной endpoint для анализа с улучшенным алгоритмом
+        """
+        serializer = AnalysisRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            return self.perform_enhanced_analysis(serializer.validated_data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    def perform_enhanced_analysis(self, validated_data):
+        """
+        Выполнение улучшенного анализа
+        """
+        try:
+            with transaction.atomic():
+                # Извлекаем данные
+                documents_data = validated_data['documents']['documents']
+                analysis_name = validated_data.get('analysis_name', 'Улучшенный анализ')
+                use_advanced = validated_data.get('use_advanced', True)
+                
+                # Сохраняем документы
+                text_documents = []
+                for doc_data in documents_data:
+                    document = TextDocument.objects.create(
+                        date=doc_data['date'],
+                        theme=doc_data['theme'],
+                        text=doc_data['text']
+                    )
+                    text_documents.append(document)
+                
+                # Создаем сессию
+                session = AnalysisSession.objects.create(
+                    name=analysis_name,
+                    description='Анализ с улучшенным алгоритмом'
+                )
+                session.documents.set(text_documents)
+                
+                # Выбираем анализатор
+                if use_advanced:
+                    # Используем гибридный анализатор
+                    analyzer = create_analyzer(mode='hybrid')
+                    
+                    # Извлекаем тексты
+                    texts = [doc.text for doc in text_documents]
+                    
+                    # Загружаем обучающие данные для дообучения
+                    training_data = TopicTrainingData()
+                    if len(training_data.data) > 0:
+                        print(f"Используем {len(training_data.data)} обучающих примеров")
+                    
+                    # Выполняем анализ
+                    analysis_result = analyzer.ensemble_analysis(texts)
+                    
+                    # Используем консенсусные результаты
+                    topic_stats = analysis_result['consensus']['topic_statistics']
+                    
+                else:
+                    # Используем старый анализатор для обратной совместимости
+                    from .bayesian_analyzer import EnhancedBayesianAnalyzer
+                    analyzer = EnhancedBayesianAnalyzer()
+                    texts = [doc.text for doc in text_documents]
+                    result = analyzer.analyze_with_auto_topics(texts)
+                    topic_stats = result['topic_statistics']
+                
+                # Сохраняем результаты
+                self.save_enhanced_results(session, topic_stats, text_documents)
+                
+                # Формируем улучшенный ответ
+                response_data = self.format_enhanced_response(session, topic_stats, text_documents)
+                
+                return Response(response_data, status=status.HTTP_200_OK)
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Ошибка при анализе: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
+    def save_enhanced_results(self, session, topic_stats, text_documents):
+        """
+        Сохранение улучшенных результатов анализа
+        """
+        for topic_stat in topic_stats:
+            if topic_stat['document_count'] > 0:
+                # Находим документы для этой темы
+                topic_docs_indices = topic_stat['document_indices']
+                topic_documents = [text_documents[i] for i in topic_docs_indices]
+                
+                # Создаем запись результата
+                topic_result = TopicResult.objects.create(
+                    session=session,
+                    topic_name=topic_stat['topic_name'],
+                    topic_keywords=topic_stat['keywords'][:10],  # Сохраняем топ-10 ключевых слов
+                    document_count=topic_stat['document_count'],
+                    confidence_score=topic_stat['average_confidence']
+                )
+                topic_result.documents.set(topic_documents)
+    
+    def format_enhanced_response(self, session, topic_stats, text_documents):
+        """
+        Форматирование улучшенного ответа
+        """
+        formatted_stats = []
+        for topic_stat in topic_stats:
+            if topic_stat['document_count'] > 0:
+                # Форматируем информацию о теме
+                formatted_topic = {
+                    'topic_id': topic_stat['topic_id'],
+                    'topic_name': topic_stat['topic_name'],
+                    'theme_guess': topic_stat.get('theme_guess', 'неизвестно'),
+                    'keywords': topic_stat['keywords'],
+                    'document_count': topic_stat['document_count'],
+                    'average_confidence': topic_stat['average_confidence'],
+                    'document_indices': topic_stat['document_indices'],
+                    'sample_documents': []
+                }
+                
+                # Добавляем примеры документов
+                for idx in topic_stat['document_indices'][:3]:  # Первые 3 документа
+                    if idx < len(text_documents):
+                        doc = text_documents[idx]
+                        formatted_topic['sample_documents'].append({
+                            'date': doc.date,
+                            'theme': doc.theme,
+                            'text_preview': doc.text[:100] + '...' if len(doc.text) > 100 else doc.text
+                        })
+                
+                formatted_stats.append(formatted_topic)
+        
+        # Метаданные анализа
+        analysis_metadata = {
+            'total_documents': len(text_documents),
+            'topics_discovered': len([t for t in topic_stats if t['document_count'] > 0]),
+            'algorithm_used': 'Hybrid LDA+NMF',
+            'model_version': '1.0'
+        }
+        
+        return {
+            'session_id': session.id,
+            'session_name': session.name,
+            'topic_statistics': formatted_stats,
+            'analysis_metadata': analysis_metadata
+        }
+
+
+# Добавьте новый endpoint в urls.py
+path('enhanced-analyze-topics/', ImprovedTopicAnalysisView.as_view(), name='enhanced-analyze-topics'),
+
 class SummaryReportView(APIView):
     """
     View для получения справки по временному диапазону
@@ -244,7 +402,8 @@ class TopicAnalysisView(APIView):
                 'topic_name': topic_stat['topic_name'],
                 'document_count': topic_stat['document_count'],
                 'keywords': topic_stat['keywords'],
-                'average_confidence': topic_stat['average_confidence']
+                'average_confidence': topic_stat['average_confidence'],
+                'document_indices': topic_stat.get('document_indices', [])  # Добавлено
             })
         
         # Метаданные анализа

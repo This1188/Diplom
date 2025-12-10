@@ -98,14 +98,13 @@ const emit = defineEmits(['set-date-range', 'generate-summary'])
 
 const activeMethod = ref('chart')
 
-// Фильтруем документы по выбранной теме
+
 const filteredDocuments = computed(() => {
-  // В реальном приложении здесь должна быть фильтрация по теме
-  // Пока возвращаем все документы для демонстрации
+
   return props.documents
 })
 
-// Документы в выбранном диапазоне
+
 const documentsInRange = computed(() => {
   if (!props.dateRange.start || !props.dateRange.end) return []
   
@@ -117,13 +116,12 @@ const documentsInRange = computed(() => {
   })
 })
 
-// Обработка выбора диапазона из графика
 const handleChartRangeSelection = (range) => {
   props.dateRange.start = range.start
   props.dateRange.end = range.end
 }
 
-// Методы для ручного ввода (оставляем из старой версии)
+
 const setDateRange = (range) => {
   const today = new Date()
   switch (range) {
@@ -149,7 +147,7 @@ const setDateRange = (range) => {
   }
 }
 
-// Автоматически выбираем весь период при загрузке
+
 watch(() => props.documents, (newDocuments) => {
   if (newDocuments.length > 0 && !props.dateRange.start && !props.dateRange.end) {
     setDateRange('all')

@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 
 export const useExamplesStore = defineStore('examples', () => {
-  // Примерные данные
   const exampleDatasets = {
     hockey: [
       {
@@ -113,7 +112,7 @@ export const useExamplesStore = defineStore('examples', () => {
     ]
   }
 
-  // Получить список доступных примеров
+
   const getAvailableExamples = () => {
     return Object.keys(exampleDatasets).map(key => ({
       id: key,
@@ -122,7 +121,7 @@ export const useExamplesStore = defineStore('examples', () => {
     }))
   }
 
-  // Получить человеко-читаемое название примера
+
   const getExampleName = (exampleId) => {
     const names = {
       hockey: 'Хоккейные новости',
@@ -133,7 +132,7 @@ export const useExamplesStore = defineStore('examples', () => {
     return names[exampleId] || exampleId
   }
 
-  // Получить данные примера по ID
+
   const getExampleData = (exampleId) => {
     return exampleDatasets[exampleId] ? [...exampleDatasets[exampleId]] : []
   }

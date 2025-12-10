@@ -41,18 +41,18 @@ let chart = null
 let isSelecting = false
 let selectionStart = null
 
-// Данные для графика
+
 const chartData = computed(() => {
   if (!props.documents.length) return { dates: [], counts: [] }
 
-  // Группируем документы по дате
+
   const dateCounts = {}
   props.documents.forEach(doc => {
     const date = doc.date
     dateCounts[date] = (dateCounts[date] || 0) + 1
   })
 
-  // Сортируем даты
+
   const sortedDates = Object.keys(dateCounts).sort()
   
   return {
@@ -61,7 +61,7 @@ const chartData = computed(() => {
   }
 })
 
-// Выбранный диапазон
+
 const selectedRange = ref({
   start: '',
   end: ''
@@ -69,7 +69,7 @@ const selectedRange = ref({
 
 const hasSelection = computed(() => selectedRange.value.start && selectedRange.value.end)
 
-// Получаем индексы выбранных дат
+
 const selectedDateIndices = computed(() => {
   if (!selectedRange.value.start || !selectedRange.value.end) return []
   
@@ -85,7 +85,7 @@ const selectedDateIndices = computed(() => {
   }, [])
 })
 
-// Пользовательский плагин для закрашивания фона выбранных областей
+
 const selectionBackgroundPlugin = {
   id: 'selectionBackground',
   beforeDatasetsDraw(chart, args, options) {
@@ -97,34 +97,33 @@ const selectionBackgroundPlugin = {
     
     ctx.save()
     
-    // Находим минимальный и максимальный индексы выбранных дат
+
     const minIndex = Math.min(...selectedDateIndices.value)
     const maxIndex = Math.max(...selectedDateIndices.value)
     
-    // Получаем координаты для закрашивания
+
     const startPixel = xAxis.getPixelForValue(chartData.value.dates[minIndex])
     const endPixel = xAxis.getPixelForValue(chartData.value.dates[maxIndex])
     
-    // Рассчитываем ширину столбца с учетом смещения
+
     const totalBars = chartData.value.dates.length
     const availableWidth = xAxis.width
     const barWidth = (availableWidth / totalBars) * 0.7
-    
-    // Закрашиваем область под выбранными столбцами
+
     ctx.fillStyle = 'rgba(52, 152, 219, 0.2)'
     ctx.fillRect(
-      startPixel - barWidth, // Смещаем влево на полную ширину столбца
+      startPixel - barWidth, 
       yAxis.top,
       endPixel - startPixel + barWidth,
       yAxis.height
     )
     
-    // Добавляем границу вокруг выделенной области
+
     ctx.strokeStyle = 'rgba(52, 152, 219, 0.8)'
     ctx.lineWidth = 2
     ctx.setLineDash([5, 5])
     ctx.strokeRect(
-      startPixel - barWidth, // Смещаем влево на полную ширину столбца
+      startPixel - barWidth, 
       yAxis.top,
       endPixel - startPixel + barWidth,
       yAxis.height
@@ -134,7 +133,7 @@ const selectionBackgroundPlugin = {
   }
 }
 
-// Получаем индекс даты по координате X с учетом смещения
+
 const getDateIndexFromX = (x) => {
   if (!chart) return -1
   
@@ -143,7 +142,7 @@ const getDateIndexFromX = (x) => {
   const availableWidth = xAxis.width
   const barWidth = (availableWidth / totalBars) * 0.7
   
-  // Смещаем координату X вправо на половину ширины столбца
+
   const adjustedX = x + barWidth / 2
   
   const xValue = xAxis.getValueForPixel(adjustedX)
@@ -153,7 +152,7 @@ const getDateIndexFromX = (x) => {
   return chartData.value.dates.findIndex(date => date === clickedDate)
 }
 
-// Инициализация графика
+
 const initChart = () => {
   if (!chartCanvas.value) return
 
@@ -232,7 +231,7 @@ const initChart = () => {
           grid: {
             color: 'rgba(0, 0, 0, 0.1)'
           },
-          offset: true // Добавляем отступ для лучшего отображения
+          offset: true 
         },
         y: {
           beginAtZero: true,
@@ -255,7 +254,7 @@ const initChart = () => {
           event.native.target.style.cursor = elements.length > 0 ? 'pointer' : 'default'
         }
       },
-      // Настройки для правильного позиционирования столбцов
+
       datasets: {
         bar: {
           categoryPercentage: 0.8,
@@ -267,11 +266,11 @@ const initChart = () => {
 
   chart = new Chart(ctx, config)
   
-  // Добавляем обработчики событий мыши
+
   addMouseHandlers()
 }
 
-// Добавление обработчиков мыши для выделения
+
 const addMouseHandlers = () => {
   if (!chartCanvas.value) return
   
@@ -283,7 +282,7 @@ const addMouseHandlers = () => {
   canvas.addEventListener('mouseleave', handleMouseLeave)
 }
 
-// Обработка нажатия мыши
+
 const handleMouseDown = (event) => {
   if (!chart) return
   
@@ -291,7 +290,7 @@ const handleMouseDown = (event) => {
   const x = event.offsetX
   selectionStart = x
   
-  // Получаем индекс даты из координаты X с учетом смещения
+
   const startIndex = getDateIndexFromX(x)
   if (startIndex !== -1) {
     const clickedDate = chartData.value.dates[startIndex]
@@ -303,18 +302,18 @@ const handleMouseDown = (event) => {
   updateChart()
 }
 
-// Обработка движения мыши при выделении
+
 const handleMouseMove = (event) => {
   if (!isSelecting || !selectionStart || !chart) return
   
   const x = event.offsetX
   
-  // Получаем индексы дат из координат с учетом смещения
+
   const startIndex = getDateIndexFromX(selectionStart)
   const currentIndex = getDateIndexFromX(x)
   
   if (startIndex !== -1 && currentIndex !== -1) {
-    // Определяем начальную и конечную даты
+
     const minIndex = Math.min(startIndex, currentIndex)
     const maxIndex = Math.max(startIndex, currentIndex)
     
@@ -325,7 +324,7 @@ const handleMouseMove = (event) => {
   }
 }
 
-// Обработка отпускания мыши
+
 const handleMouseUp = () => {
   isSelecting = false
   selectionStart = null
@@ -334,7 +333,7 @@ const handleMouseUp = () => {
   }
 }
 
-// Обработка выхода мыши за пределы canvas
+
 const handleMouseLeave = () => {
   isSelecting = false
   selectionStart = null
@@ -343,21 +342,21 @@ const handleMouseLeave = () => {
   }
 }
 
-// Обновление графика
+
 const updateChart = () => {
   if (chart) {
     chart.update()
   }
 }
 
-// Очистка выделения
+
 const clearSelection = () => {
   selectedRange.value.start = ''
   selectedRange.value.end = ''
   updateChart()
 }
 
-// Подтверждение выбора
+
 const confirmSelection = () => {
   if (hasSelection.value) {
     emit('range-selected', {
@@ -367,7 +366,7 @@ const confirmSelection = () => {
   }
 }
 
-// Удаление обработчиков событий
+
 const removeMouseHandlers = () => {
   if (!chartCanvas.value) return
   
@@ -379,7 +378,7 @@ const removeMouseHandlers = () => {
   canvas.removeEventListener('mouseleave', handleMouseLeave)
 }
 
-// Наблюдаем за изменениями в документах
+
 watch(chartData, () => {
   if (chart) {
     removeMouseHandlers()
@@ -388,7 +387,7 @@ watch(chartData, () => {
   }
 })
 
-// Наблюдаем за изменениями выделения
+
 watch(selectedDateIndices, () => {
   updateChart()
 })

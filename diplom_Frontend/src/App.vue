@@ -15,7 +15,7 @@
         @analyze-documents="analyzeDocuments"
       />
 
-      <!-- Остальные компоненты остаются без изменений -->
+
       <AnalysisResults 
         v-if="currentStep === 2"
         :topics="topics"
@@ -68,7 +68,7 @@ import ErrorMessage from './components/ErrorMessage.vue'
 
 const API_BASE = 'http://localhost:8000/api'
 
-// Reactive state
+
 const currentStep = ref(1)
 const loading = ref(false)
 const error = ref('')
@@ -83,7 +83,7 @@ const dateRange = reactive({
   end: ''
 })
 
-// Computed properties
+
 const canAnalyze = computed(() => {
   return documents.value.length > 0 && documents.value.every(doc => 
     doc.date && doc.theme.trim() && doc.text.trim()
@@ -94,7 +94,7 @@ const canGenerateSummary = computed(() => {
   return dateRange.start && dateRange.end && selectedTopic.value
 })
 
-// Methods
+
 const addDocument = () => {
   documents.value.push({ date: '', theme: '', text: '' })
 }
@@ -107,12 +107,12 @@ const clearAll = () => {
   documents.value = []
 }
 
-// Обновленный метод загрузки примера
+
 const loadExample = (exampleData) => {
   documents.value = JSON.parse(JSON.stringify(exampleData))
 }
 
-// Остальные методы остаются без изменений
+
 const selectTopic = (topicName) => {
   selectedTopic.value = topicName
 }

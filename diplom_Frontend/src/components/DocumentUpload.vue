@@ -103,12 +103,12 @@ const emit = defineEmits([
   'analyze-documents'
 ])
 
-// Загружаем доступные примеры при монтировании компонента
+
 onMounted(() => {
   availableExamples.value = examplesStore.getAvailableExamples()
 })
 
-// Загрузка выбранного примера
+
 const loadExample = (exampleId) => {
   const exampleData = examplesStore.getExampleData(exampleId)
   emit('load-example', exampleData)

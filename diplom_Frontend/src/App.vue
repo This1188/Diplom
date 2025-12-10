@@ -28,6 +28,7 @@
         v-if="currentStep === 3"
         :selected-topic="selectedTopic"
         :documents="documents"
+        :topics="topics" 
         :date-range="dateRange"
         :can-generate-summary="canGenerateSummary"
         @set-date-range="setDateRange"
@@ -147,20 +148,40 @@ const analyzeDocuments = async () => {
   error.value = ''
   
   try {
-    const response = await axios.post(`${API_BASE}/analyze-topics/`, {
+    // Используем LLM endpoint
+    const response = await axios.post(`${API_BASE}/llm/analyze-topics/`, {
       documents: {
         documents: documents.value
       },
-      analysis_name: 'Анализ документов',
-      auto_determine_topics: true
+      analysis_name: 'LLM Анализ документов'
     })
 
     topics.value = response.data.topic_statistics
     analysisSessionId.value = response.data.session_id
     currentStep.value = 2
     
+    console.log("LLM Результаты анализа:", response.data)
+    
   } catch (err) {
-    error.value = `Ошибка анализа: ${err.response?.data?.error || err.message}`
+
+    console.warn("LLM недоступен, используем классический анализ:", err.message)
+    
+    try {
+      const fallbackResponse = await axios.post(`${API_BASE}/analyze-topics/`, {
+        documents: {
+          documents: documents.value
+        },
+        analysis_name: 'Классический анализ',
+        auto_determine_topics: true
+      })
+      
+      topics.value = fallbackResponse.data.topic_statistics
+      analysisSessionId.value = fallbackResponse.data.session_id
+      currentStep.value = 2
+      
+    } catch (fallbackErr) {
+      error.value = `Ошибка анализа: ${fallbackErr.response?.data?.error || fallbackErr.message}`
+    }
   } finally {
     loading.value = false
   }
@@ -175,17 +196,43 @@ const generateSummary = async () => {
   error.value = ''
   
   try {
-    const response = await axios.post(`${API_BASE}/summary-report/`, {
+    // Используем LLM для генерации справки
+    const response = await axios.post(`${API_BASE}/llm/generate-summary/`, {
       session_id: analysisSessionId.value,
+      topic_name: selectedTopic.value,
       start_date: dateRange.start,
       end_date: dateRange.end
     })
 
-    summary.value = response.data
+ 
+    summary.value = {
+      ...response.data,
+      is_llm_generated: true
+    }
+    
     currentStep.value = 4
     
   } catch (err) {
-    error.value = `Ошибка формирования справки: ${err.response?.data?.error || err.message}`
+
+    console.warn("LLM справка недоступна, используем простую:", err.message)
+    
+    try {
+      const fallbackResponse = await axios.post(`${API_BASE}/summary-report/`, {
+        session_id: analysisSessionId.value,
+        start_date: dateRange.start,
+        end_date: dateRange.end
+      })
+
+      summary.value = {
+        ...fallbackResponse.data,
+        is_llm_generated: false
+      }
+      
+      currentStep.value = 4
+      
+    } catch (fallbackErr) {
+      error.value = `Ошибка формирования справки: ${fallbackErr.response?.data?.error || fallbackErr.message}`
+    }
   } finally {
     loading.value = false
   }

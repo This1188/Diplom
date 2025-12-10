@@ -2,6 +2,7 @@
   <div class="step">
     <h2>Шаг 3: Выбор временного диапазона</h2>
     <p>Выбранная тема: <strong>{{ selectedTopic }}</strong></p>
+    <p>Документов в теме: <strong>{{ topicDocuments.length }}</strong></p>
     
     <div class="date-range-section">
       <div class="selection-methods">
@@ -24,10 +25,15 @@
 
         <!-- Выбор на графике -->
         <div v-if="activeMethod === 'chart'" class="chart-method">
-          <DateRangeChart 
-            :documents="filteredDocuments"
-            @range-selected="handleChartRangeSelection"
-          />
+          <div v-if="topicDocuments.length > 0">
+            <DateRangeChart 
+              :documents="topicDocuments"
+              @range-selected="handleChartRangeSelection"
+            />
+          </div>
+          <div v-else class="no-documents">
+            <p>Нет документов в выбранной теме</p>
+          </div>
         </div>
 
         <!-- Ручной ввод -->
@@ -84,6 +90,10 @@ const props = defineProps({
     type: Array,
     required: true
   },
+  topics: {
+    type: Array,
+    required: true
+  },
   dateRange: {
     type: Object,
     required: true
@@ -99,16 +109,25 @@ const emit = defineEmits(['set-date-range', 'generate-summary'])
 const activeMethod = ref('chart')
 
 
-const filteredDocuments = computed(() => {
+const selectedTopicInfo = computed(() => {
+  return props.topics.find(topic => topic.topic_name === props.selectedTopic)
+})
 
-  return props.documents
+
+const topicDocuments = computed(() => {
+  if (!selectedTopicInfo.value) return []
+  
+  const selectedTopicObj = props.topics.find(t => t.topic_name === props.selectedTopic)
+  if (!selectedTopicObj || !selectedTopicObj.document_indices) return []
+  
+  return selectedTopicObj.document_indices.map(index => props.documents[index])
 })
 
 
 const documentsInRange = computed(() => {
   if (!props.dateRange.start || !props.dateRange.end) return []
   
-  return props.documents.filter(doc => {
+  return topicDocuments.value.filter(doc => {
     const docDate = new Date(doc.date)
     const startDate = new Date(props.dateRange.start)
     const endDate = new Date(props.dateRange.end)
@@ -124,6 +143,11 @@ const handleChartRangeSelection = (range) => {
 
 const setDateRange = (range) => {
   const today = new Date()
+  
+  if (topicDocuments.value.length === 0) return
+  
+  const docDates = topicDocuments.value.map(doc => new Date(doc.date))
+  
   switch (range) {
     case 'lastWeek':
       const lastWeek = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -136,10 +160,9 @@ const setDateRange = (range) => {
       props.dateRange.end = today.toISOString().split('T')[0]
       break
     case 'all':
-      if (props.documents.length > 0) {
-        const dates = props.documents.map(doc => new Date(doc.date))
-        const minDate = new Date(Math.min(...dates)).toISOString().split('T')[0]
-        const maxDate = new Date(Math.max(...dates)).toISOString().split('T')[0]
+      if (topicDocuments.value.length > 0) {
+        const minDate = new Date(Math.min(...docDates)).toISOString().split('T')[0]
+        const maxDate = new Date(Math.max(...docDates)).toISOString().split('T')[0]
         props.dateRange.start = minDate
         props.dateRange.end = maxDate
       }
@@ -148,8 +171,8 @@ const setDateRange = (range) => {
 }
 
 
-watch(() => props.documents, (newDocuments) => {
-  if (newDocuments.length > 0 && !props.dateRange.start && !props.dateRange.end) {
+watch(() => [props.selectedTopic, topicDocuments.value], ([newTopic, newDocs]) => {
+  if (newTopic && newDocs.length > 0 && (!props.dateRange.start || !props.dateRange.end)) {
     setDateRange('all')
   }
 }, { immediate: true })

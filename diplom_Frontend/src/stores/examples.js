@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 
 export const useExamplesStore = defineStore('examples', () => {
   const exampleDatasets = {
-    hockey: [
+    others: [
       {
         "date": "2024-03-01",
         "theme": "Хоккейный матч",
@@ -28,8 +28,7 @@ export const useExamplesStore = defineStore('examples', () => {
         "theme": "Хоккейные рекорды",
         "text": "Рекорд посещаемости на матче Локомотив - Салават Юлаев. Более 12 тысяч зрителей стали свидетелями семиголевой победной игры. Обе команды показали атакующий хоккей высшего класса."
       }
-    ],
-    technology: [
+,
       {
         "date": "2024-03-01",
         "theme": "Новые технологии",
@@ -55,8 +54,7 @@ export const useExamplesStore = defineStore('examples', () => {
         "theme": "Космические технологии",
         "text": "Частная компания успешно запустила ракету с научным оборудованием на орбиту. Миссия направлена на изучение климатических изменений Земли."
       }
-    ],
-    economics: [
+    ,
       {
         "date": "2024-03-01",
         "theme": "Финансовые рынки",
@@ -81,9 +79,7 @@ export const useExamplesStore = defineStore('examples', () => {
         "date": "2024-03-05",
         "theme": "Инфляция",
         "text": "Центральный банк повысил ключевую ставку для борьбы с растущей инфляцией. Экономисты ожидают замедления роста цен в следующем квартале."
-      }
-    ],
-    sports: [
+      },
       {
         "date": "2024-03-01",
         "theme": "Футбольные матчи",
@@ -124,7 +120,7 @@ export const useExamplesStore = defineStore('examples', () => {
 
   const getExampleName = (exampleId) => {
     const names = {
-      hockey: 'Хоккейные новости',
+      others: 'Хоккейные новости',
       technology: 'Технологии',
       economics: 'Экономика',
       sports: 'Спортивные события'
